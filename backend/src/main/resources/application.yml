@@ -6,3 +6,6 @@ spring:
   datasource:
     url: jdbc:sqlite:lightswitch.sqlite
     driver-class-name: org.sqlite.JDBC
+
+jwt:
+  secret:
