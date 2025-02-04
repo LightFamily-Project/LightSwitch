@@ -1,0 +1,90 @@
+name: CI pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest # The runner to use
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnmp
+        uses: pnpm/action-setup@v4
+        with:
+          version: "9.15.4"
+          package_json_file: "frontend/package.json"
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          pnpm install --no-frozen-lockfile
+
+      - name: Run lint
+        run: |
+          cd frontend
+          pnpm lint
+
+      - name: Check ts
+        run: |
+          cd frontend
+          pnpm tsc
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          pnpm build
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "17"
+          distribution: "graalvm"
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('backend/**/*.gradle*', 'backend/**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Build and test Backend
+        run: |
+          cd backend
+          chmod +x gradlew
+          ./gradlew build --no-daemon
+
+  java-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK (for Java SDK)
+        uses: actions/setup-java@v4
+        with:
+          java-version: "11"
+          distribution: "corretto"
+
+      - name: Build and test Java SDK
+        run: |
+          cd sdk/java-sdk
+          chmod +x gradlew
+          ./gradlew build --no-daemon
